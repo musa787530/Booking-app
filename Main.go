@@ -2,103 +2,76 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	"time"
+
+	//"strconv"
+
+	//"strings"
+
+	// Import the helper package
+	"LANG/helper" // Correct import path
 )
 
-// pakage level variables
 var conferenceName = "GO Conference"
 
 const conferenceTickets = 50
 
 var remainingTickets = 50
-var bookings []string
+var bookings = make([]Userdata, 0)
+
+type Userdata struct {
+	firstName string
+	lastName  string
+	email     string
+	tickets   int
+}
 
 func main() {
-
 	greetUser()
-	//fmt.Printf("conferenceTickets is %T, remainingTickets is %T, conferenceName is %T\n", conferenceTickets, remainingTickets, conferenceName)
 
-	for {
-		firstName, lastName, email, userticket := getuseriput()
-		// check if user input is valid
+	firstName, lastName, email, userticket := getUserInput()
 
-		//isValidcity:= city == "London" || city == "New York" || city == "Berlin"
-		validateUserInput(firstName, lastName, email, userticket)
-		isvalidName, isvalidemails, isvalidticketNumber := validateUserInput(firstName, lastName, email, userticket)
-		if isvalidName && isvalidemails && isvalidticketNumber {
+	// Correct function name here
+	isValidName, isValidEmail, isValidTicketNumber := helper.ValidateUserInput(firstName, lastName, email, userticket, remainingTickets)
 
-			booktickets(firstName, lastName, email, userticket)
+	if isValidName && isValidEmail && isValidTicketNumber {
+		bookTickets(firstName, lastName, email, userticket)
+		go sendTicket(userticket, firstName, lastName, email)
 
-			fmt.Printf("Current bookings: %v\n", bookings)
-			fmt.Printf("Number of bookings: %v\n", len(bookings))
-			fmt.Printf("Slice type: %T\n", bookings)
-			// print first names of all bookings
-			// call function to print first names of all bookings
+		firstNames := getFirstNames()
+		fmt.Printf("First names of all bookings: %v\n", firstNames)
 
-			firstNames := getFirstNames()
-			fmt.Printf("First names of all bookings: %v\n", firstNames)
-
-			if remainingTickets == 0 {
-				fmt.Println("All tickets are sold out! Come back next year.")
-				break
-			}
-		} else if userticket == remainingTickets {
-			fmt.Println("You just booked the last available tickets!")
-			break
-		} else {
-			// we are gonna user what exactly they did wrong
-			if !isvalidName {
-				fmt.Printf("Invalid name. Please check your first and last name.\n")
-			}
-			if !isvalidemails {
-				fmt.Printf("Invalid email. Please check your email address.\n")
-			}
-			if !isvalidticketNumber {
-				fmt.Printf("Invalid ticket number. Please check the number of tickets you entered.\n")
-			}
-
-			//fmt.Println("Invalid input. Please check your details.\n")
+		if remainingTickets == 0 {
+			fmt.Println("All tickets are sold out! Come back next year.")
+			//break
 		}
-
+	} else {
+		if !isValidName {
+			fmt.Println("Invalid name. Please enter at least 2 characters for first and last name.")
+		}
+		if !isValidEmail {
+			fmt.Println("Invalid email. It should contain '@'.")
+		}
+		if !isValidTicketNumber {
+			fmt.Printf("Invalid ticket number. Please enter a number between 1 and %v.\n", remainingTickets)
+		}
 	}
+
 }
 
 func greetUser() {
 	fmt.Println("========= GO Conference Booking =========")
-	fmt.Println("Welcome to the %v booking app!", conferenceName)
+	fmt.Printf("Welcome to the %v booking app!\n", conferenceName)
 	fmt.Println("Book your seats before they run out!")
 	fmt.Println("=========================================")
 	fmt.Printf("We have a total of %v tickets and %v are available for booking.\n", conferenceTickets, remainingTickets)
-	fmt.Println("Get your ticket now!")
 }
 
-func getFirstNames() []string {
-	firstNames := []string{}
-	for _, booking := range bookings {
-		names := strings.Fields(booking)
-		if len(names) > 0 {
-			firstNames = append(firstNames, names[0])
-		}
-	}
-	//fmt.Printf("First names of all bookings: %v\n", firstNames)
-	return firstNames
-}
-
-func validateUserInput(firstName string, lastName string, email string, userticket int) (bool, bool, bool) {
-	isvalidName := len(firstName) >= 2 && len(lastName) >= 2
-	isvalidemails := strings.Contains(email, "@")
-	isvalidticketNumber := userticket > 0 && userticket <= remainingTickets
-
-	return isvalidName, isvalidemails, isvalidticketNumber
-}
-
-func getuseriput() (string, string, string, int) {
-	var firstName string
-	var lastName string
-	var email string
+func getUserInput() (string, string, string, int) {
+	var firstName, lastName, email string
 	var userticket int
 
-	fmt.Println("Enter your first name:")
+	fmt.Println("\nEnter your first name:")
 	fmt.Scan(&firstName)
 
 	fmt.Println("Enter your last name:")
@@ -113,9 +86,57 @@ func getuseriput() (string, string, string, int) {
 	return firstName, lastName, email, userticket
 }
 
-func booktickets(firstName string, lastName string, email string, userticket int) {
-	// book tickets
-	bookings = append(bookings, firstName+" "+lastName)
-	fmt.Printf("Thank you %v %v for booking %v tickets. You will receive a confirmation email at %v.\n", firstName, lastName, userticket, email)
-	fmt.Printf("You have booked %v tickets.\n", userticket)
+func bookTickets(firstName string, lastName string, email string, userticket int) {
+	remainingTickets -= userticket
+
+	// create a map to store user data
+	var userdata = Userdata{
+		firstName: firstName,
+		lastName:  lastName,
+		email:     email,
+		tickets:   userticket,
+	}
+
+	bookings = append(bookings, userdata)
+	fmt.Printf("List of bookings: %v\n", bookings)
+	fmt.Printf("\nThank you %v %v for booking %v tickets. You will receive a confirmation email at %v.\n", firstName, lastName, userticket, email)
+	fmt.Printf("%v tickets remaining for %v.\n", remainingTickets, conferenceName)
+}
+
+func getFirstNames() []string {
+	firstNames := []string{}
+	for _, booking := range bookings {
+
+		firstNames = append(firstNames, booking.firstName)
+
+	}
+	return firstNames
+}
+
+// maps are used to store data in key-value pairs
+// maps are unordered collections of data
+// maps are reference types
+// maps are created using the make function
+// maps are not safe for concurrent use
+
+// struct data type is used to create a custom data type
+// struct is a collection of fields
+// struct is a value type
+// struct is created using the type keyword
+// struct is used to create a custom data type
+
+// Concurrency /Go routines
+// Concurrency is the ability to run multiple tasks at the same time
+// Go routines are lightweight threads managed by the Go runtime
+
+// Go routines are created using the go keyword
+// Go routines are used to run functions concurrently
+// Go routines are used to run functions in the background
+
+func sendTicket(userTicket int, firstName string, lastName string, email string) {
+	time.Sleep(10 * time.Second) // Simulate a delay for sending the ticket
+	ticket := fmt.Sprintf("%v tickets for %v %v", userTicket, firstName, lastName)
+	fmt.Println("#########################")
+	fmt.Printf("Sending ticket:\n  %v\n  to email: %v\n...\n", ticket, email)
+	fmt.Println("#########################")
 }
